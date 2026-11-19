@@ -5,6 +5,8 @@ import com.challenge.transactions.exception.ParentTransactionNotFoundException;
 import com.challenge.transactions.exception.SelfReferencingTransactionException;
 import com.challenge.transactions.model.Transaction;
 import com.challenge.transactions.repository.TransactionRepository;
+import java.util.ArrayDeque;
+import java.util.Deque;
 import java.util.List;
 import org.springframework.stereotype.Service;
 
@@ -29,6 +31,19 @@ public class TransactionService {
 
     public List<Long> findIdsByType(String type) {
         return repository.findIdsByType(type);
+    }
+
+    public double sum(long id) {
+        double total = 0;
+        Deque<Long> pending = new ArrayDeque<>();
+        pending.add(id);
+
+        while (!pending.isEmpty()) {
+            long currentId = pending.poll();
+            total += repository.findById(currentId).orElseThrow().amount();
+            pending.addAll(repository.findChildrenIds(currentId));
+        }
+        return total;
     }
 
     private void validateParent(long id, long parentId) {

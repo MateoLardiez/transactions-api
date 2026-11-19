@@ -88,4 +88,31 @@ class TransactionServiceTest {
 
         assertThat(service.findIdsByType("food")).isEmpty();
     }
+
+    @Test
+    void sumOfTransactionWithoutChildrenIsItsOwnAmount() {
+        service.create(new Transaction(10L, 5000.0, "cars", null));
+
+        assertThat(service.sum(10L)).isEqualTo(5000.0);
+    }
+
+    @Test
+    void sumIncludesAllDescendantsButNotAncestors() {
+        service.create(new Transaction(10L, 5000.0, "cars", null));
+        service.create(new Transaction(11L, 10000.0, "shopping", 10L));
+        service.create(new Transaction(12L, 5000.0, "shopping", 11L));
+
+        assertThat(service.sum(10L)).isEqualTo(20000.0);
+        assertThat(service.sum(11L)).isEqualTo(15000.0);
+    }
+
+    @Test
+    void sumTraversesEveryBranch() {
+        service.create(new Transaction(10L, 1000.0, "cars", null));
+        service.create(new Transaction(11L, 200.0, "cars", 10L));
+        service.create(new Transaction(12L, 30.0, "cars", 10L));
+        service.create(new Transaction(13L, 4.0, "cars", 11L));
+
+        assertThat(service.sum(10L)).isEqualTo(1234.0);
+    }
 }
