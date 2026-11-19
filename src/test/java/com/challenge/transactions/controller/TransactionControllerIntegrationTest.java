@@ -74,6 +74,41 @@ class TransactionControllerIntegrationTest {
     }
 
     @Test
+    void putTransactionWithExistingIdReturnsConflict() throws Exception {
+        createTransaction(10, """
+                { "amount": 5000, "type": "cars" }
+                """);
+
+        putTransaction(10, """
+                { "amount": 999, "type": "food" }
+                """)
+                .andExpect(status().isConflict());
+
+        assertThat(repository.findById(10L))
+                .contains(new Transaction(10L, 5000.0, "cars", null));
+    }
+
+    @Test
+    void putTransactionWithNonExistentParentReturnsBadRequest() throws Exception {
+        putTransaction(11, """
+                { "amount": 10000, "type": "shopping", "parent_id": 10 }
+                """)
+                .andExpect(status().isBadRequest());
+
+        assertThat(repository.findById(11L)).isEmpty();
+    }
+
+    @Test
+    void putTransactionThatIsItsOwnParentReturnsBadRequest() throws Exception {
+        putTransaction(10, """
+                { "amount": 5000, "type": "cars", "parent_id": 10 }
+                """)
+                .andExpect(status().isBadRequest());
+
+        assertThat(repository.findById(10L)).isEmpty();
+    }
+
+    @Test
     void getByTypeReturnsIdsOfThatType() throws Exception {
         createTransaction(10, """
                 { "amount": 5000, "type": "cars" }
