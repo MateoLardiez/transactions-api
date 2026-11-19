@@ -57,4 +57,28 @@ class TransactionControllerIntegrationTest {
         assertThat(repository.findById(11L))
                 .contains(new Transaction(11L, 10000.0, "shopping", 10L));
     }
+
+    @Test
+    void putTransactionWithoutAmountReturnsBadRequest() throws Exception {
+        mockMvc.perform(put("/transactions/10")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                { "type": "cars" }
+                                """))
+                .andExpect(status().isBadRequest());
+
+        assertThat(repository.findById(10L)).isEmpty();
+    }
+
+    @Test
+    void putTransactionWithBlankTypeReturnsBadRequest() throws Exception {
+        mockMvc.perform(put("/transactions/10")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                { "amount": 5000, "type": "  " }
+                                """))
+                .andExpect(status().isBadRequest());
+
+        assertThat(repository.findById(10L)).isEmpty();
+    }
 }
