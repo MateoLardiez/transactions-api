@@ -118,6 +118,17 @@ class TransactionServiceTest {
     }
 
     @Test
+    void sumHandlesVeryLongChainsWithoutStackOverflow() {
+        long chainLength = 100_000;
+        service.create(new Transaction(1L, 1.0, "chain", null));
+        for (long id = 2; id <= chainLength; id++) {
+            service.create(new Transaction(id, 1.0, "chain", id - 1));
+        }
+
+        assertThat(service.sum(1L)).isEqualTo(100_000.0);
+    }
+
+    @Test
     void sumOfNonExistentTransactionIsRejected() {
         assertThatThrownBy(() -> service.sum(99L))
                 .isInstanceOf(TransactionNotFoundException.class)
