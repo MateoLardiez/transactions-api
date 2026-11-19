@@ -43,7 +43,7 @@ Registra una transacción.
 
 | Respuesta | Caso |
 |---|---|
-| `200 OK` `{ "status": "ok" }` | Transacción creada |
+| `201 Created` `{ "status": "ok" }` | Transacción creada |
 | `400 Bad Request` | Body inválido, `parent_id` inexistente o igual al propio id |
 | `409 Conflict` | Ya existe una transacción con ese id |
 
@@ -85,6 +85,7 @@ GET /transactions/sum/11     => { "sum": 15000 }   (11 + 12)
 - **Suma calculada con recorrido iterativo** (BFS con una cola explícita) en lugar de recursión, para soportar cadenas de cualquier profundidad.
 - **Java 25 y Spring Boot 4**. El enunciado pide Java 11 o superior; se eligió la última versión LTS de Java por tener el soporte más largo, junto con la versión estable actual de Spring Boot.
 - **Maven con Maven Wrapper**. El proyecto incluye `./mvnw`, por lo que no hace falta tener Maven instalado para compilarlo.
+- **`PUT` responde `201 Created` con `{ "status": "ok" }`**. El body respeta el ejemplo de la consigna. El código de estado no está especificado en la consigna, así que se sigue el estándar HTTP: un `PUT` que crea un recurso nuevo responde `201`. Como este `PUT` nunca reemplaza (los duplicados dan `409`), siempre responde `201`.
 
 ## Modelo de datos
 
@@ -122,4 +123,4 @@ A completar
 
 ## Posibles mejoras
 
-A completar
+- **Devolver el objeto creado en el `PUT`**. Es la convención habitual para un recurso recién creado y evita que el cliente tenga que consultarlo de nuevo. No se hizo para respetar el body `{ "status": "ok" }` que pide la consigna.
