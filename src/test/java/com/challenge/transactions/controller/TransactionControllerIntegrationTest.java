@@ -1,6 +1,7 @@
 package com.challenge.transactions.controller;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -14,6 +15,7 @@ import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.ResultActions;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -28,11 +30,9 @@ class TransactionControllerIntegrationTest {
 
     @Test
     void putTransactionReturnsCreated() throws Exception {
-        mockMvc.perform(put("/transactions/10")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                { "amount": 5000, "type": "cars" }
-                                """))
+        putTransaction(10, """
+                { "amount": 5000, "type": "cars" }
+                """)
                 .andExpect(status().isCreated())
                 .andExpect(content().json("""
                         { "status": "ok" }
@@ -41,18 +41,13 @@ class TransactionControllerIntegrationTest {
 
     @Test
     void putTransactionStoresItsParentId() throws Exception {
-        mockMvc.perform(put("/transactions/10")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content("""
-                        { "amount": 5000, "type": "cars" }
-                        """));
+        createTransaction(10, """
+                { "amount": 5000, "type": "cars" }
+                """);
 
-        mockMvc.perform(put("/transactions/11")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                { "amount": 10000, "type": "shopping", "parent_id": 10 }
-                                """))
-                .andExpect(status().isCreated());
+        createTransaction(11, """
+                { "amount": 10000, "type": "shopping", "parent_id": 10 }
+                """);
 
         assertThat(repository.findById(11L))
                 .contains(new Transaction(11L, 10000.0, "shopping", 10L));
@@ -60,11 +55,9 @@ class TransactionControllerIntegrationTest {
 
     @Test
     void putTransactionWithoutAmountReturnsBadRequest() throws Exception {
-        mockMvc.perform(put("/transactions/10")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                { "type": "cars" }
-                                """))
+        putTransaction(10, """
+                { "type": "cars" }
+                """)
                 .andExpect(status().isBadRequest());
 
         assertThat(repository.findById(10L)).isEmpty();
@@ -72,13 +65,49 @@ class TransactionControllerIntegrationTest {
 
     @Test
     void putTransactionWithBlankTypeReturnsBadRequest() throws Exception {
-        mockMvc.perform(put("/transactions/10")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                { "amount": 5000, "type": "  " }
-                                """))
+        putTransaction(10, """
+                { "amount": 5000, "type": "  " }
+                """)
                 .andExpect(status().isBadRequest());
 
         assertThat(repository.findById(10L)).isEmpty();
+    }
+
+    @Test
+    void getByTypeReturnsIdsOfThatType() throws Exception {
+        createTransaction(10, """
+                { "amount": 5000, "type": "cars" }
+                """);
+        createTransaction(11, """
+                { "amount": 10000, "type": "shopping", "parent_id": 10 }
+                """);
+        createTransaction(12, """
+                { "amount": 5000, "type": "shopping", "parent_id": 11 }
+                """);
+
+        mockMvc.perform(get("/transactions/types/shopping"))
+                .andExpect(status().isOk())
+                .andExpect(content().json("[11, 12]"));
+    }
+
+    @Test
+    void getByTypeReturnsEmptyListWhenTypeDoesNotExist() throws Exception {
+        createTransaction(10, """
+                { "amount": 5000, "type": "cars" }
+                """);
+
+        mockMvc.perform(get("/transactions/types/food"))
+                .andExpect(status().isOk())
+                .andExpect(content().json("[]"));
+    }
+
+    private ResultActions putTransaction(long id, String body) throws Exception {
+        return mockMvc.perform(put("/transactions/" + id)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(body));
+    }
+
+    private void createTransaction(long id, String body) throws Exception {
+        putTransaction(id, body).andExpect(status().isCreated());
     }
 }
