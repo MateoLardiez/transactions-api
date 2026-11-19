@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.challenge.transactions.model.Transaction;
@@ -82,7 +83,10 @@ class TransactionControllerIntegrationTest {
         putTransaction(10, """
                 { "amount": 999, "type": "food" }
                 """)
-                .andExpect(status().isConflict());
+                .andExpect(status().isConflict())
+                .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
+                .andExpect(jsonPath("$.status").value(409))
+                .andExpect(jsonPath("$.detail").value("Transaction with id 10 already exists"));
 
         assertThat(repository.findById(10L))
                 .contains(new Transaction(10L, 5000.0, "cars", null));
@@ -93,7 +97,10 @@ class TransactionControllerIntegrationTest {
         putTransaction(11, """
                 { "amount": 10000, "type": "shopping", "parent_id": 10 }
                 """)
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isBadRequest())
+                .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
+                .andExpect(jsonPath("$.status").value(400))
+                .andExpect(jsonPath("$.detail").value("Parent transaction with id 10 does not exist"));
 
         assertThat(repository.findById(11L)).isEmpty();
     }
@@ -103,7 +110,10 @@ class TransactionControllerIntegrationTest {
         putTransaction(10, """
                 { "amount": 5000, "type": "cars", "parent_id": 10 }
                 """)
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isBadRequest())
+                .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
+                .andExpect(jsonPath("$.status").value(400))
+                .andExpect(jsonPath("$.detail").value("Transaction with id 10 cannot be its own parent"));
 
         assertThat(repository.findById(10L)).isEmpty();
     }
@@ -161,7 +171,11 @@ class TransactionControllerIntegrationTest {
     @Test
     void getSumOfNonExistentTransactionReturnsNotFound() throws Exception {
         mockMvc.perform(get("/transactions/sum/99"))
-                .andExpect(status().isNotFound());
+                .andExpect(status().isNotFound())
+                .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
+                .andExpect(jsonPath("$.status").value(404))
+                .andExpect(jsonPath("$.detail").value("Transaction with id 99 does not exist"))
+                .andExpect(jsonPath("$.instance").value("/transactions/sum/99"));
     }
 
     @Test
