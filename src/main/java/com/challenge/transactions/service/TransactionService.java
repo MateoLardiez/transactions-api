@@ -1,5 +1,6 @@
 package com.challenge.transactions.service;
 
+import com.challenge.transactions.exception.DuplicateTransactionException;
 import com.challenge.transactions.model.Transaction;
 import com.challenge.transactions.repository.TransactionRepository;
 import org.springframework.stereotype.Service;
@@ -14,6 +15,8 @@ public class TransactionService {
     }
 
     public void create(Transaction transaction) {
-        repository.save(transaction);
+        if (!repository.saveIfAbsent(transaction)) {
+            throw new DuplicateTransactionException(transaction.id());
+        }
     }
 }

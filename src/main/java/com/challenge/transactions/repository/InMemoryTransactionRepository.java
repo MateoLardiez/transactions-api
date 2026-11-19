@@ -15,14 +15,18 @@ public class InMemoryTransactionRepository implements TransactionRepository {
     private final Map<Long, Set<Long>> childrenIdsByParentId = new ConcurrentHashMap<>();
 
     @Override
-    public void save(Transaction transaction) {
-        transactionsById.put(transaction.id(), transaction);
+    public boolean saveIfAbsent(Transaction transaction) {
+        Transaction existing = transactionsById.putIfAbsent(transaction.id(), transaction);
+        if (existing != null) {
+            return false;
+        }
 
         if (transaction.parentId() != null) {
             childrenIdsByParentId
                     .computeIfAbsent(transaction.parentId(), parentId -> ConcurrentHashMap.newKeySet())
                     .add(transaction.id());
         }
+        return true;
     }
 
     @Override

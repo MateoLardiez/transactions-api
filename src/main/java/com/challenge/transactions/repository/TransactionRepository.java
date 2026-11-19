@@ -6,7 +6,13 @@ import java.util.Optional;
 
 public interface TransactionRepository {
 
-    void save(Transaction transaction);
+    /**
+     * Saves the transaction only if no transaction with the same id exists.
+     * The check and the save happen atomically.
+     *
+     * @return true if it was saved, false if the id already existed
+     */
+    boolean saveIfAbsent(Transaction transaction);
 
     Optional<Transaction> findById(long id);
 
