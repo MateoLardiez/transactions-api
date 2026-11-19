@@ -1,2 +1,113 @@
 # transactions-api
-REST API en Spring Boot para registrar transacciones en memoria, consultarlas por tipo y calcular el monto total de cada transacción junto con todas las que dependen de ella vía parent_id
+
+API REST en Spring Boot que almacena transacciones en memoria, permite consultarlas por tipo y calcula el monto total de una transacción sumando el de todas sus descendientes vinculadas mediante `parent_id`.
+
+## Requerimientos
+
+### Requerimientos funcionales
+
+- **Almacenar una transacción**: un usuario puede registrar una transacción indicando su `id` (long, en la URL), `amount` (double), `type` (string) y, opcionalmente, `parent_id` (long) que la vincula con una transacción padre.
+- **Consultar por tipo**: un usuario puede obtener la lista de **ids** de todas las transacciones de un tipo determinado.
+- **Calcular la suma transitiva**: un usuario puede obtener la suma de los montos de una transacción **y de todas sus descendientes transitivas** (hijos, nietos, etc.).
+  - Incluye el monto de la propia transacción.
+  - Solo recorre hacia los descendientes, nunca hacia los ancestros.
+  - Aplica a cualquier transacción: una sin hijos devuelve su propio monto.
+
+### Reglas de negocio
+
+- **Ids únicos**: no puede haber dos transacciones con el mismo `id`.
+- **Padre existente**: si se informa `parent_id`, debe corresponder a una transacción ya registrada.
+- **Sin autorreferencia**: `parent_id` no puede ser igual al `id` de la propia transacción.
+- **Campos obligatorios**: `amount` y `type` son obligatorios; `type` no puede estar vacío.
+
+### Requerimientos no funcionales
+
+- **Tecnología**: Java 11 o superior, Spring Boot.
+- **Persistencia**: en memoria, sin SQL.
+- **Despliegue**: aplicación dockerizada.
+- **Testing**: tests de integración obligatorios; desarrollo guiado por TDD.
+- **Arquitectura**: separación en capas (controller, service, repository) aplicando principios SOLID.
+- **Concurrencia**: el almacenamiento debe ser seguro ante requests simultáneas (thread-safe).
+- **Eficiencia**: obtener los hijos de una transacción no debe requerir recorrer todas las transacciones.
+- **Robustez**: el cálculo de la suma no debe fallar con cadenas largas de transacciones.
+
+## API
+
+### `PUT /transactions/{transaction_id}`
+
+Registra una transacción.
+
+```json
+{ "amount": 5000, "type": "cars", "parent_id": 10 }
+```
+
+| Respuesta | Caso |
+|---|---|
+| `200 OK` `{ "status": "ok" }` | Transacción creada |
+| `400 Bad Request` | Body inválido, `parent_id` inexistente o igual al propio id |
+| `409 Conflict` | Ya existe una transacción con ese id |
+
+### `GET /transactions/types/{type}`
+
+Devuelve los ids de las transacciones del tipo indicado.
+
+| Respuesta | Caso |
+|---|---|
+| `200 OK` `[10, 11]` | Lista de ids (vacía `[]` si no hay ninguna) |
+
+### `GET /transactions/sum/{transaction_id}`
+
+Devuelve la suma de la transacción y todas sus descendientes.
+
+| Respuesta | Caso |
+|---|---|
+| `200 OK` `{ "sum": 20000 }` | Suma calculada |
+| `404 Not Found` | La transacción no existe |
+
+### Ejemplo
+
+```
+PUT /transactions/10 { "amount": 5000,  "type": "cars" }                       => { "status": "ok" }
+PUT /transactions/11 { "amount": 10000, "type": "shopping", "parent_id": 10 }  => { "status": "ok" }
+PUT /transactions/12 { "amount": 5000,  "type": "shopping", "parent_id": 11 }  => { "status": "ok" }
+
+GET /transactions/types/cars => [10]
+GET /transactions/sum/10     => { "sum": 20000 }   (10 + 11 + 12)
+GET /transactions/sum/11     => { "sum": 15000 }   (11 + 12)
+```
+
+## Decisiones tomadas
+
+- **PUT no reemplaza transacciones existentes (409)**. Aunque `PUT` suele significar "crear o reemplazar", el enunciado describe el id como el de una *nueva* transacción. Además, permitir reemplazos habilitaría cambiar el `parent_id` de una transacción existente y formar ciclos (por ejemplo 10 → 12 → 11 → 10), lo que rompería el cálculo de la suma.
+- **El padre debe existir previamente (400)**. Junto con la decisión anterior, garantiza que las relaciones forman un arbol sin ciclos, por construcción.
+- **Montos negativos permitidos**. El enunciado no los restringe y pueden representar devoluciones o ajustes.
+- **Tipo inexistente devuelve `[]`**. Consultar un tipo sin transacciones no es un error, simplemente no hay resultados.
+- **Suma calculada con recorrido iterativo** (BFS con una cola explícita) en lugar de recursión, para soportar cadenas de cualquier profundidad.
+
+## Modelo de datos
+
+A completar
+
+## Compilar y ejecutar
+
+### Local
+
+#### Requisitos
+
+A completar
+
+### Docker
+
+A completar
+
+## Tests
+
+A completar
+
+## Estructura del sistema
+
+A completar
+
+## Posibles mejoras
+
+A completar
