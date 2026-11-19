@@ -22,7 +22,7 @@ API REST en Spring Boot que almacena transacciones en memoria, permite consultar
 
 ### Requerimientos no funcionales
 
-- **Tecnología**: Java 11 o superior, Spring Boot.
+- **Tecnología**: Java 11 o superior (se usa Java 25), Spring Boot.
 - **Persistencia**: en memoria, sin SQL.
 - **Despliegue**: aplicación dockerizada.
 - **Testing**: tests de integración obligatorios; desarrollo guiado por TDD.
@@ -83,6 +83,8 @@ GET /transactions/sum/11     => { "sum": 15000 }   (11 + 12)
 - **Montos negativos permitidos**. El enunciado no los restringe y pueden representar devoluciones o ajustes.
 - **Tipo inexistente devuelve `[]`**. Consultar un tipo sin transacciones no es un error, simplemente no hay resultados.
 - **Suma calculada con recorrido iterativo** (BFS con una cola explícita) en lugar de recursión, para soportar cadenas de cualquier profundidad.
+- **Java 25 y Spring Boot 4**. El enunciado pide Java 11 o superior; se eligió la última versión LTS de Java por tener el soporte más largo, junto con la versión estable actual de Spring Boot.
+- **Maven con Maven Wrapper**. El proyecto incluye `./mvnw`, por lo que no hace falta tener Maven instalado para compilarlo.
 
 ## Modelo de datos
 
@@ -94,7 +96,15 @@ A completar
 
 #### Requisitos
 
-A completar
+- Java 25
+
+#### Ejecutar
+
+```bash
+./mvnw spring-boot:run
+```
+
+La API queda disponible en `http://localhost:8080`.
 
 ### Docker
 
@@ -102,7 +112,9 @@ A completar
 
 ## Tests
 
-A completar
+```bash
+./mvnw test
+```
 
 ## Estructura del sistema
 
