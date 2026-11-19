@@ -72,4 +72,20 @@ class TransactionServiceTest {
                 .hasMessage("Transaction with id 10 cannot be its own parent");
         assertThat(repository.findById(10L)).isEmpty();
     }
+
+    @Test
+    void findIdsByTypeReturnsIdsOfThatType() {
+        service.create(new Transaction(10L, 5000.0, "cars", null));
+        service.create(new Transaction(11L, 10000.0, "shopping", 10L));
+        service.create(new Transaction(12L, 5000.0, "shopping", 11L));
+
+        assertThat(service.findIdsByType("shopping")).containsExactlyInAnyOrder(11L, 12L);
+    }
+
+    @Test
+    void findIdsByTypeReturnsEmptyListWhenTypeDoesNotExist() {
+        service.create(new Transaction(10L, 5000.0, "cars", null));
+
+        assertThat(service.findIdsByType("food")).isEmpty();
+    }
 }

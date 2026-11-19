@@ -5,6 +5,7 @@ import com.challenge.transactions.exception.ParentTransactionNotFoundException;
 import com.challenge.transactions.exception.SelfReferencingTransactionException;
 import com.challenge.transactions.model.Transaction;
 import com.challenge.transactions.repository.TransactionRepository;
+import java.util.List;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -24,6 +25,10 @@ public class TransactionService {
         if (!repository.saveIfAbsent(transaction)) {
             throw new DuplicateTransactionException(transaction.id());
         }
+    }
+
+    public List<Long> findIdsByType(String type) {
+        return repository.findIdsByType(type);
     }
 
     private void validateParent(long id, long parentId) {
