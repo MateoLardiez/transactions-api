@@ -6,6 +6,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import com.challenge.transactions.exception.DuplicateTransactionException;
 import com.challenge.transactions.exception.ParentTransactionNotFoundException;
 import com.challenge.transactions.exception.SelfReferencingTransactionException;
+import com.challenge.transactions.exception.TransactionNotFoundException;
 import com.challenge.transactions.model.Transaction;
 import com.challenge.transactions.repository.InMemoryTransactionRepository;
 import com.challenge.transactions.repository.TransactionRepository;
@@ -114,5 +115,12 @@ class TransactionServiceTest {
         service.create(new Transaction(13L, 4.0, "cars", 11L));
 
         assertThat(service.sum(10L)).isEqualTo(1234.0);
+    }
+
+    @Test
+    void sumOfNonExistentTransactionIsRejected() {
+        assertThatThrownBy(() -> service.sum(99L))
+                .isInstanceOf(TransactionNotFoundException.class)
+                .hasMessage("Transaction with id 99 does not exist");
     }
 }

@@ -3,6 +3,7 @@ package com.challenge.transactions.service;
 import com.challenge.transactions.exception.DuplicateTransactionException;
 import com.challenge.transactions.exception.ParentTransactionNotFoundException;
 import com.challenge.transactions.exception.SelfReferencingTransactionException;
+import com.challenge.transactions.exception.TransactionNotFoundException;
 import com.challenge.transactions.model.Transaction;
 import com.challenge.transactions.repository.TransactionRepository;
 import java.util.ArrayDeque;
@@ -34,9 +35,11 @@ public class TransactionService {
     }
 
     public double sum(long id) {
-        double total = 0;
-        Deque<Long> pending = new ArrayDeque<>();
-        pending.add(id);
+        Transaction root = repository.findById(id)
+                .orElseThrow(() -> new TransactionNotFoundException(id));
+
+        double total = root.amount();
+        Deque<Long> pending = new ArrayDeque<>(repository.findChildrenIds(id));
 
         while (!pending.isEmpty()) {
             long currentId = pending.poll();
