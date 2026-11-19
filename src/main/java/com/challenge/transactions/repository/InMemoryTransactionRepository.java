@@ -1,6 +1,7 @@
 package com.challenge.transactions.repository;
 
 import com.challenge.transactions.model.Transaction;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
@@ -19,5 +20,13 @@ public class InMemoryTransactionRepository implements TransactionRepository {
     @Override
     public Optional<Transaction> findById(long id) {
         return Optional.ofNullable(transactionsById.get(id));
+    }
+
+    @Override
+    public List<Long> findIdsByType(String type) {
+        return transactionsById.values().stream()
+                .filter(transaction -> transaction.type().equals(type))
+                .map(Transaction::id)
+                .toList();
     }
 }
