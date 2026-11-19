@@ -101,6 +101,55 @@ class TransactionControllerIntegrationTest {
                 .andExpect(content().json("[]"));
     }
 
+    @Test
+    void getSumReturnsSumOfTransactionAndAllItsDescendants() throws Exception {
+        createTransaction(10, """
+                { "amount": 1000, "type": "cars" }
+                """);
+        createTransaction(11, """
+                { "amount": 200, "type": "cars", "parent_id": 10 }
+                """);
+        createTransaction(12, """
+                { "amount": 30, "type": "cars", "parent_id": 10 }
+                """);
+        createTransaction(13, """
+                { "amount": 4, "type": "cars", "parent_id": 11 }
+                """);
+
+        mockMvc.perform(get("/transactions/sum/10"))
+                .andExpect(status().isOk())
+                .andExpect(content().json("""
+                        { "sum": 1234 }
+                        """));
+    }
+
+    @Test
+    void statementExampleWorksEndToEnd() throws Exception {
+        createTransaction(10, """
+                { "amount": 5000, "type": "cars" }
+                """);
+        createTransaction(11, """
+                { "amount": 10000, "type": "shopping", "parent_id": 10 }
+                """);
+        createTransaction(12, """
+                { "amount": 5000, "type": "shopping", "parent_id": 11 }
+                """);
+
+        mockMvc.perform(get("/transactions/types/cars"))
+                .andExpect(status().isOk())
+                .andExpect(content().json("[10]"));
+        mockMvc.perform(get("/transactions/sum/10"))
+                .andExpect(status().isOk())
+                .andExpect(content().json("""
+                        { "sum": 20000 }
+                        """));
+        mockMvc.perform(get("/transactions/sum/11"))
+                .andExpect(status().isOk())
+                .andExpect(content().json("""
+                        { "sum": 15000 }
+                        """));
+    }
+
     private ResultActions putTransaction(long id, String body) throws Exception {
         return mockMvc.perform(put("/transactions/" + id)
                 .contentType(MediaType.APPLICATION_JSON)

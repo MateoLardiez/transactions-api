@@ -1,6 +1,7 @@
 package com.challenge.transactions.controller;
 
 import com.challenge.transactions.controller.dto.StatusResponse;
+import com.challenge.transactions.controller.dto.SumResponse;
 import com.challenge.transactions.controller.dto.TransactionRequest;
 import com.challenge.transactions.service.TransactionService;
 import jakarta.validation.Valid;
@@ -34,5 +35,10 @@ public class TransactionController {
     @GetMapping("/types/{type}")
     public List<Long> findIdsByType(@PathVariable String type) {
         return service.findIdsByType(type);
+    }
+
+    @GetMapping("/sum/{id}")
+    public SumResponse sum(@PathVariable long id) {
+        return new SumResponse(service.sum(id));
     }
 }
