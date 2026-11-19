@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.challenge.transactions.exception.DuplicateTransactionException;
 import com.challenge.transactions.exception.ParentTransactionNotFoundException;
+import com.challenge.transactions.exception.SelfReferencingTransactionException;
 import com.challenge.transactions.model.Transaction;
 import com.challenge.transactions.repository.InMemoryTransactionRepository;
 import com.challenge.transactions.repository.TransactionRepository;
@@ -60,5 +61,15 @@ class TransactionServiceTest {
                 .isInstanceOf(ParentTransactionNotFoundException.class)
                 .hasMessage("Parent transaction with id 10 does not exist");
         assertThat(repository.findById(11L)).isEmpty();
+    }
+
+    @Test
+    void creatingTransactionThatIsItsOwnParentIsRejected() {
+        var selfReferencing = new Transaction(10L, 5000.0, "cars", 10L);
+
+        assertThatThrownBy(() -> service.create(selfReferencing))
+                .isInstanceOf(SelfReferencingTransactionException.class)
+                .hasMessage("Transaction with id 10 cannot be its own parent");
+        assertThat(repository.findById(10L)).isEmpty();
     }
 }
