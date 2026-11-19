@@ -124,6 +124,12 @@ class TransactionControllerIntegrationTest {
     }
 
     @Test
+    void getSumOfNonExistentTransactionReturnsNotFound() throws Exception {
+        mockMvc.perform(get("/transactions/sum/99"))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
     void statementExampleWorksEndToEnd() throws Exception {
         createTransaction(10, """
                 { "amount": 5000, "type": "cars" }
