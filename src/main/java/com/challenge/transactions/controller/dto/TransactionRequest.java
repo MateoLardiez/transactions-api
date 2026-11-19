@@ -6,8 +6,8 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
 public record TransactionRequest(
-        @NotNull Double amount,
-        @NotBlank String type,
+        @NotNull(message = "must not be null") Double amount,
+        @NotBlank(message = "must not be blank") String type,
         @JsonProperty("parent_id") Long parentId) {
 
     public Transaction toTransaction(long id) {

@@ -76,6 +76,33 @@ GET /transactions/sum/10     => { "sum": 20000 }   (10 + 11 + 12)
 GET /transactions/sum/11     => { "sum": 15000 }   (11 + 12)
 ```
 
+### Errores
+
+Todos los errores se responden con el formato estándar `ProblemDetail` y `Content-Type: application/problem+json`:
+
+```json
+{
+  "type": "about:blank",
+  "title": "Not Found",
+  "status": 404,
+  "detail": "Transaction with id 99 does not exist",
+  "instance": "/transactions/sum/99"
+}
+```
+
+Los errores de validación del body agregan el campo `errors`, con el motivo de cada campo inválido:
+
+```json
+{
+  "type": "about:blank",
+  "title": "Bad Request",
+  "status": 400,
+  "detail": "Invalid request content.",
+  "instance": "/transactions/10",
+  "errors": { "amount": "must not be null" }
+}
+```
+
 ## Decisiones tomadas
 
 - **PUT no reemplaza transacciones existentes (409)**. Aunque `PUT` suele significar "crear o reemplazar", el enunciado describe el id como el de una *nueva* transacción. Además, permitir reemplazos habilitaría cambiar el `parent_id` de una transacción existente y formar ciclos (por ejemplo 10 → 12 → 11 → 10), lo que rompería el cálculo de la suma.
@@ -86,6 +113,7 @@ GET /transactions/sum/11     => { "sum": 15000 }   (11 + 12)
 - **Java 25 y Spring Boot 4**. El enunciado pide Java 11 o superior; se eligió la última versión LTS de Java por tener el soporte más largo, junto con la versión estable actual de Spring Boot.
 - **Maven con Maven Wrapper**. El proyecto incluye `./mvnw`, por lo que no hace falta tener Maven instalado para compilarlo.
 - **`PUT` responde `201 Created` con `{ "status": "ok" }`**. El body respeta el ejemplo de la consigna. El código de estado no está especificado en la consigna, así que se sigue el estándar HTTP: un `PUT` que crea un recurso nuevo responde `201`. Como este `PUT` nunca reemplaza (los duplicados dan `409`), siempre responde `201`.
+- **Errores con `ProblemDetail`**. Se usa el formato estándar de errores HTTP en lugar de uno propio. Spring lo soporta de forma nativa, así que los errores propios (404, 409, 400) y los internos de Spring (JSON mal formado, id no numérico) responden con la misma forma.
 
 ## Modelo de datos
 

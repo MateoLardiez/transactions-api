@@ -59,7 +59,9 @@ class TransactionControllerIntegrationTest {
         putTransaction(10, """
                 { "type": "cars" }
                 """)
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isBadRequest())
+                .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
+                .andExpect(jsonPath("$.errors.amount").value("must not be null"));
 
         assertThat(repository.findById(10L)).isEmpty();
     }
@@ -69,9 +71,22 @@ class TransactionControllerIntegrationTest {
         putTransaction(10, """
                 { "amount": 5000, "type": "  " }
                 """)
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isBadRequest())
+                .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
+                .andExpect(jsonPath("$.errors.type").value("must not be blank"));
 
         assertThat(repository.findById(10L)).isEmpty();
+    }
+
+    @Test
+    void validationMessagesDoNotDependOnClientLanguage() throws Exception {
+        mockMvc.perform(put("/transactions/10")
+                        .header("Accept-Language", "es")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errors.amount").value("must not be null"))
+                .andExpect(jsonPath("$.errors.type").value("must not be blank"));
     }
 
     @Test
