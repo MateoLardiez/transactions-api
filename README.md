@@ -120,7 +120,27 @@ Los errores del body (campos faltantes o con un tipo de dato incorrecto) agregan
 
 ## Modelo de datos
 
-A completar
+Una transacción es un `record` inmutable:
+
+```java
+public record Transaction(long id, double amount, String type, Long parentId) {}
+```
+
+`parentId` es `Long` (objeto) porque puede ser `null` cuando la transacción no tiene padre.
+
+Cada transacción tiene como máximo un padre, y un padre puede tener muchos hijos. Como el padre debe existir antes que el hijo y una transacción nunca se reemplaza, las relaciones forman un conjunto de árboles sin ciclos.
+
+El almacenamiento en memoria usa dos `ConcurrentHashMap`, con el ejemplo de la consigna:
+
+```
+transactionsById                 childrenIdsByParentId
+10 → Transaction(10, 5000, ...)  10 → {11}
+11 → Transaction(11, 10000, ...) 11 → {12}
+12 → Transaction(12, 5000, ...)
+```
+
+- `transactionsById` busca una transacción por id.
+- `childrenIdsByParentId` es un índice para obtener los hijos directos de una transacción sin recorrer todas. Cumple el mismo rol que un índice sobre la columna `parent_id` en una base de datos.
 
 ## Compilar y ejecutar
 
@@ -161,11 +181,44 @@ El `Dockerfile` es multi-stage: la primera etapa compila el Jar y corre los test
 ./mvnw test
 ```
 
+El proyecto se desarrolló con TDD: cada funcionalidad empezó con un test en rojo. Hay dos tipos de tests:
+
+- **Unitarios**: prueban el modelo, el repositorio y el servicio de forma aislada, sin levantar Spring. Los del servicio usan el repositorio en memoria real en lugar de mocks, para verificar comportamiento y no detalles de implementación. Incluyen un caso con una cadena de 100.000 transacciones que verifica que la suma no provoca `StackOverflowError`.
+- **De integración** (`TransactionControllerIntegrationTest`): levantan la aplicación completa y envían requests HTTP con `MockMvc`. Cubren los tres endpoints, todos los códigos de error y el ejemplo completo de la consigna. Cada test arranca con la aplicación limpia (`@DirtiesContext`), porque el repositorio en memoria es compartido.
+
 ## Estructura del sistema
 
-A completar
+La aplicación está organizada en capas. Cada capa solo conoce a la de abajo:
+
+```
+HTTP → Controller → Service → Repository
+```
+
+```
+src/main/java/com/challenge/transactions/
+├── controller/
+│   ├── TransactionController.java      # Endpoints REST: traduce HTTP ↔ Java
+│   ├── GlobalExceptionHandler.java     # Traduce excepciones a respuestas ProblemDetail
+│   └── dto/                            # Formato de requests y responses de la API
+├── service/
+│   └── TransactionService.java         # Reglas de negocio y cálculo de la suma (BFS)
+├── repository/
+│   ├── TransactionRepository.java      # Contrato de acceso a datos
+│   └── InMemoryTransactionRepository.java  # Implementación con ConcurrentHashMap
+├── model/
+│   └── Transaction.java                # Entidad de dominio
+└── exception/                          # Excepciones de dominio, una por regla
+```
+
+- **Controller**: recibe el request, valida su forma (campos obligatorios, tipos) y delega en el servicio. No contiene lógica de negocio.
+- **Service**: aplica las reglas que dependen del estado guardado (duplicados, padre existente, autorreferencia) y recorre el árbol para la suma.
+- **Repository**: guarda y busca datos. El servicio depende de la interfaz `TransactionRepository`, no de la implementación, así que el almacenamiento se puede reemplazar (por ejemplo, por una base de datos) sin tocar la lógica de negocio.
+- **Exceptions**: el servicio lanza errores en términos de negocio ("el padre no existe"), y `GlobalExceptionHandler` es el único lugar que decide qué código HTTP les corresponde.
 
 ## Posibles mejoras
 
 - **Devolver el objeto creado en el `PUT`**. Es la convención habitual para un recurso recién creado y evita que el cliente tenga que consultarlo de nuevo. No se hizo para respetar el body `{ "status": "ok" }` que pide la consigna.
+- **Usar `BigDecimal` para los montos**. `double` es punto flotante binario y no representa exactamente algunos decimales (`0.1 + 0.2` da `0.30000000000000004`). Para dinero real conviene `BigDecimal`, que es decimal exacto. Se usó `double` porque es el tipo que especifica la consigna.
+- **Persistencia en una base de datos**. Hoy los datos se pierden al reiniciar la aplicación. Bastaría con una nueva implementación de `TransactionRepository`. Con SQL, la suma se podría resolver en una sola consulta recursiva (`WITH RECURSIVE`).
+- **Índice por tipo**. `findIdsByType` recorre todas las transacciones (O(n)). Un segundo índice `type → ids`, como el de hijos, lo haría directo.
 - **Rechazar números en campos de texto**. Hoy `"type": 123` se acepta y se guarda como `"123"`, porque la configuración que vuelve estricto a `amount` solo cubre la conversión de string a número. Se podría rechazar con un customizer de Jackson. No se priorizó porque no afecta los montos ni las sumas.
