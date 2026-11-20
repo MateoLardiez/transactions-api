@@ -27,6 +27,14 @@ class OpenApiDocumentationIntegrationTest {
     }
 
     @Test
+    void apiDocsIncludeGeneralInformation() throws Exception {
+        mockMvc.perform(get("/v3/api-docs"))
+                .andExpect(jsonPath("$.info.title").value("Transactions API"))
+                .andExpect(jsonPath("$.info.version").value("1.0.0"))
+                .andExpect(jsonPath("$.info.description").isNotEmpty());
+    }
+
+    @Test
     void swaggerUiIsAvailable() throws Exception {
         mockMvc.perform(get("/swagger-ui.html"))
                 .andExpect(status().is3xxRedirection());

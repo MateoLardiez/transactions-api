@@ -201,6 +201,8 @@ HTTP → Controller → Service → Repository
 
 ```
 src/main/java/com/challenge/transactions/
+├── config/
+│   └── OpenApiConfig.java              # Información general de la documentación OpenAPI
 ├── controller/
 │   ├── TransactionController.java      # Endpoints REST: traduce HTTP ↔ Java
 │   ├── GlobalExceptionHandler.java     # Traduce excepciones a respuestas ProblemDetail
