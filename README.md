@@ -81,8 +81,6 @@ Devuelve la suma de la transacción y todas sus descendientes.
 | `200 OK` `{ "sum": 20000 }` | Suma calculada |
 | `404 Not Found` | La transacción no existe |
 
-Con las transacciones 10, 11 y 12 del [ejemplo](#ejemplo) ya creadas:
-
 ```bash
 curl http://localhost:8080/transactions/sum/10
 # { "sum": 5000.0 }
@@ -114,7 +112,7 @@ Todos los errores se responden con el formato estándar `ProblemDetail` y `Conte
 }
 ```
 
-Los errores del body (campos faltantes o con un tipo de dato incorrecto) agregan el campo `errors`, con el motivo de cada campo inválido:
+Los errores del body (campos faltantes, con un tipo de dato incorrecto o desconocidos) agregan el campo `errors`, con el motivo de cada campo inválido:
 
 ```json
 {
@@ -130,7 +128,7 @@ Los errores del body (campos faltantes o con un tipo de dato incorrecto) agregan
 ## Decisiones tomadas
 
 - **PUT no reemplaza transacciones existentes (409)**. Aunque `PUT` suele significar "crear o reemplazar", el enunciado describe el id como el de una *nueva* transacción. Además, permitir reemplazos habilitaría cambiar el `parent_id` de una transacción existente y formar ciclos (por ejemplo 10 → 12 → 11 → 10), lo que rompería el cálculo de la suma.
-- **El padre debe existir previamente (400)**. Junto con la decisión anterior, garantiza que las relaciones forman un arbol sin ciclos, por construcción.
+- **El padre debe existir previamente (400)**. Junto con la decisión anterior, garantiza que las relaciones forman un árbol sin ciclos, por construcción.
 - **Montos negativos permitidos**. El enunciado no los restringe y pueden representar devoluciones o ajustes.
 - **Tipo inexistente devuelve `[]`**. Consultar un tipo sin transacciones no es un error, simplemente no hay resultados.
 - **Los tipos distinguen mayúsculas**. `cars` y `Cars` son tipos distintos. La consigna no lo especifica y la comparación exacta es la más predecible.
@@ -212,7 +210,9 @@ Las dependencias de Maven se descargan en una capa separada del código fuente, 
 El proyecto se desarrolló con TDD: cada funcionalidad empezó con un test en rojo. Hay dos tipos de tests:
 
 - **Unitarios**: prueban el modelo, el repositorio y el servicio de forma aislada, sin levantar Spring. Los del servicio usan el repositorio en memoria real en lugar de mocks, para verificar comportamiento y no detalles de implementación. Incluyen un caso con una cadena de 100.000 transacciones que verifica que la suma no provoca `StackOverflowError`.
-- **De integración** (`TransactionControllerIntegrationTest`): levantan la aplicación completa y envían requests HTTP con `MockMvc`. Cubren los tres endpoints, todos los códigos de error y el ejemplo completo de la consigna. Cada test arranca con la aplicación limpia (`@DirtiesContext`), porque el repositorio en memoria es compartido.
+- **De integración**: levantan la aplicación completa y envían requests HTTP con `MockMvc`.
+  - `TransactionControllerIntegrationTest` cubre los tres endpoints, todos los códigos de error y el ejemplo completo de la consigna. Cada test arranca con la aplicación limpia (`@DirtiesContext`), porque el repositorio en memoria es compartido.
+  - `OpenApiDocumentationIntegrationTest` verifica que la documentación de Swagger describa cada endpoint con sus códigos de respuesta reales.
 
 ## Estructura del sistema
 
