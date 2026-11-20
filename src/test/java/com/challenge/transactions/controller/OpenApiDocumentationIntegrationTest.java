@@ -68,6 +68,16 @@ class OpenApiDocumentationIntegrationTest {
     }
 
     @Test
+    void requestBodyFieldsHaveExamples() throws Exception {
+        String fields = "$.components.schemas.TransactionRequest.properties";
+
+        mockMvc.perform(get("/v3/api-docs"))
+                .andExpect(jsonPath(fields + ".amount.example").value(5000))
+                .andExpect(jsonPath(fields + ".type.example").value("cars"))
+                .andExpect(jsonPath(fields + ".parent_id.example").value(10));
+    }
+
+    @Test
     void endpointsHaveSummaries() throws Exception {
         mockMvc.perform(get("/v3/api-docs"))
                 .andExpect(jsonPath("$.paths['/transactions/{id}'].put.summary").isNotEmpty())
