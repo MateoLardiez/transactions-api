@@ -52,6 +52,13 @@ Registra una transacción.
 | `400 Bad Request` | Body inválido, `parent_id` inexistente o igual al propio id |
 | `409 Conflict` | Ya existe una transacción con ese id |
 
+```bash
+curl -X PUT http://localhost:8080/transactions/10 \
+  -H "Content-Type: application/json" \
+  -d '{ "amount": 5000, "type": "cars" }'
+# { "status": "ok" }
+```
+
 ### `GET /transactions/types/{type}`
 
 Devuelve los ids de las transacciones del tipo indicado.
@@ -59,6 +66,11 @@ Devuelve los ids de las transacciones del tipo indicado.
 | Respuesta | Caso |
 |---|---|
 | `200 OK` `[10, 11]` | Lista de ids (vacía `[]` si no hay ninguna) |
+
+```bash
+curl http://localhost:8080/transactions/types/cars
+# [10]
+```
 
 ### `GET /transactions/sum/{transaction_id}`
 
@@ -68,6 +80,13 @@ Devuelve la suma de la transacción y todas sus descendientes.
 |---|---|
 | `200 OK` `{ "sum": 20000 }` | Suma calculada |
 | `404 Not Found` | La transacción no existe |
+
+Con las transacciones 10, 11 y 12 del [ejemplo](#ejemplo) ya creadas:
+
+```bash
+curl http://localhost:8080/transactions/sum/10
+# { "sum": 5000.0 }
+```
 
 ### Ejemplo
 
@@ -155,7 +174,7 @@ transactionsById                 childrenIdsByParentId
 
 #### Requisitos
 
-- Java 25
+- JDK 25
 
 #### Ejecutar
 
