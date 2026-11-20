@@ -106,6 +106,21 @@ class TransactionControllerIntegrationTest {
     }
 
     @Test
+    void putTransactionWithDecimalParentIdReturnsBadRequest() throws Exception {
+        createTransaction(10, """
+                { "amount": 5000, "type": "cars" }
+                """);
+
+        putTransaction(11, """
+                { "amount": 1, "type": "x", "parent_id": 10.7 }
+                """)
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errors.parent_id").value("must be an integer"));
+
+        assertThat(repository.findById(11L)).isEmpty();
+    }
+
+    @Test
     void putTransactionWithAmountAsStringReturnsBadRequest() throws Exception {
         putTransaction(10, """
                 { "amount": "2", "type": "cars" }

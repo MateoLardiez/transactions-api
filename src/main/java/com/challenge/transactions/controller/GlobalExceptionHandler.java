@@ -73,6 +73,9 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
             return "unknown field";
         }
         Class<?> targetType = mismatch.getTargetType();
+        if (targetType == Long.class || targetType == long.class) {
+            return "must be an integer";
+        }
         if (targetType != null && Number.class.isAssignableFrom(targetType)) {
             return "must be a number";
         }

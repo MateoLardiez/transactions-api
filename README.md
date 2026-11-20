@@ -141,6 +141,7 @@ Los errores del body (campos faltantes, con un tipo de dato incorrecto o descono
 - **Sin Docker Compose**. Compose sirve para coordinar varios servicios (por ejemplo, la app junto a una base de datos). Este proyecto tiene un único servicio sin dependencias externas, así que solo serviría para juntar `docker build` y `docker run` en un comando. Si en el futuro se agregara una base de datos, ahí sí tendría sentido.
 - **`amount` debe ser un número JSON**. Por defecto Jackson convierte strings numéricos (`"amount": "2"`) en números sin avisar. Se desactivó esa conversión porque el monto es el dato crítico de una transacción: un valor con formato ambiguo se rechaza con `400` en lugar de interpretarse en silencio.
 - **Campos desconocidos rechazados**. Por defecto Jackson ignora los campos que no reconoce. Eso hacía que un `"parentId"` (en lugar de `"parent_id"`) se ignorara y la transacción se creara sin padre, sin ningún aviso al cliente. Ahora un campo desconocido responde `400` con `"errors": { "parentId": "unknown field" }`. Omitir `parent_id` sigue siendo válido.
+- **`parent_id` debe ser un entero**. Por defecto Jackson trunca los decimales en campos enteros: `"parent_id": 10.7` se convertía en `10` sin avisar, y la transacción quedaba colgada de un padre que el cliente no eligió, alterando las sumas. Ahora responde `400` con `"errors": { "parent_id": "must be an integer" }`.
 
 ## Modelo de datos
 
