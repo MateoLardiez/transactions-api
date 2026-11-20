@@ -91,6 +91,17 @@ class TransactionControllerIntegrationTest {
     }
 
     @Test
+    void putTransactionWithAmountAsStringReturnsBadRequest() throws Exception {
+        putTransaction(10, """
+                { "amount": "2", "type": "cars" }
+                """)
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errors.amount").value("must be a number"));
+
+        assertThat(repository.findById(10L)).isEmpty();
+    }
+
+    @Test
     void putTransactionWithInvalidTypeValueReturnsBadRequestWithField() throws Exception {
         putTransaction(10, """
                 { "amount": 5000, "type": { "name": "cars" } }

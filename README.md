@@ -116,6 +116,7 @@ Los errores del body (campos faltantes o con un tipo de dato incorrecto) agregan
 - **Errores con `ProblemDetail`**. Se usa el formato estándar de errores HTTP en lugar de uno propio. Spring lo soporta de forma nativa, así que los errores propios (404, 409, 400) y los internos de Spring (JSON mal formado, id no numérico) responden con la misma forma.
 - **La imagen de Docker corre los tests al construirse**. El build ejecuta `./mvnw package` sin `-DskipTests`, así que si algún test falla no se genera la imagen. Tarda más en construir, pero garantiza que nunca se empaquete código con tests en rojo.
 - **Sin Docker Compose**. Compose sirve para coordinar varios servicios (por ejemplo, la app junto a una base de datos). Este proyecto tiene un único servicio sin dependencias externas, así que solo serviría para juntar `docker build` y `docker run` en un comando. Si en el futuro se agregara una base de datos, ahí sí tendría sentido.
+- **`amount` debe ser un número JSON**. Por defecto Jackson convierte strings numéricos (`"amount": "2"`) en números sin avisar. Se desactivó esa conversión porque el monto es el dato crítico de una transacción: un valor con formato ambiguo se rechaza con `400` en lugar de interpretarse en silencio.
 
 ## Modelo de datos
 
@@ -167,3 +168,4 @@ A completar
 ## Posibles mejoras
 
 - **Devolver el objeto creado en el `PUT`**. Es la convención habitual para un recurso recién creado y evita que el cliente tenga que consultarlo de nuevo. No se hizo para respetar el body `{ "status": "ok" }` que pide la consigna.
+- **Rechazar números en campos de texto**. Hoy `"type": 123` se acepta y se guarda como `"123"`, porque la configuración que vuelve estricto a `amount` solo cubre la conversión de string a número. Se podría rechazar con un customizer de Jackson. No se priorizó porque no afecta los montos ni las sumas.
