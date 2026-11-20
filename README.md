@@ -114,6 +114,8 @@ Los errores de validación del body agregan el campo `errors`, con el motivo de 
 - **Maven con Maven Wrapper**. El proyecto incluye `./mvnw`, por lo que no hace falta tener Maven instalado para compilarlo.
 - **`PUT` responde `201 Created` con `{ "status": "ok" }`**. El body respeta el ejemplo de la consigna. El código de estado no está especificado en la consigna, así que se sigue el estándar HTTP: un `PUT` que crea un recurso nuevo responde `201`. Como este `PUT` nunca reemplaza (los duplicados dan `409`), siempre responde `201`.
 - **Errores con `ProblemDetail`**. Se usa el formato estándar de errores HTTP en lugar de uno propio. Spring lo soporta de forma nativa, así que los errores propios (404, 409, 400) y los internos de Spring (JSON mal formado, id no numérico) responden con la misma forma.
+- **La imagen de Docker corre los tests al construirse**. El build ejecuta `./mvnw package` sin `-DskipTests`, así que si algún test falla no se genera la imagen. Tarda más en construir, pero garantiza que nunca se empaquete código con tests en rojo.
+- **Sin Docker Compose**. Compose sirve para coordinar varios servicios (por ejemplo, la app junto a una base de datos). Este proyecto tiene un único servicio sin dependencias externas, así que solo serviría para juntar `docker build` y `docker run` en un comando. Si en el futuro se agregara una base de datos, ahí sí tendría sentido.
 
 ## Modelo de datos
 
@@ -137,7 +139,20 @@ La API queda disponible en `http://localhost:8080`.
 
 ### Docker
 
-A completar
+#### Requisitos
+
+- Docker
+
+#### Ejecutar
+
+```bash
+docker build -t transactions-api .
+docker run --rm -p 8080:8080 transactions-api
+```
+
+La API queda disponible en `http://localhost:8080`.
+
+El `Dockerfile` es multi-stage: la primera etapa compila el Jar y corre los tests con el JDK; la segunda solo contiene el JRE y el Jar, por lo que la imagen final es más liviana.
 
 ## Tests
 
