@@ -91,6 +91,21 @@ class TransactionControllerIntegrationTest {
     }
 
     @Test
+    void putTransactionWithUnknownFieldReturnsBadRequest() throws Exception {
+        createTransaction(10, """
+                { "amount": 5000, "type": "cars" }
+                """);
+
+        putTransaction(11, """
+                { "amount": 7, "type": "cars", "parentId": 10 }
+                """)
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errors.parentId").value("unknown field"));
+
+        assertThat(repository.findById(11L)).isEmpty();
+    }
+
+    @Test
     void putTransactionWithAmountAsStringReturnsBadRequest() throws Exception {
         putTransaction(10, """
                 { "amount": "2", "type": "cars" }

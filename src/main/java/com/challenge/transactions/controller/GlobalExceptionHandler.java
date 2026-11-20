@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 import tools.jackson.databind.exc.MismatchedInputException;
+import tools.jackson.databind.exc.UnrecognizedPropertyException;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
@@ -62,12 +63,16 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
         if (exception.getCause() instanceof MismatchedInputException mismatch && !mismatch.getPath().isEmpty()) {
             String field = mismatch.getPath().getLast().getPropertyName();
-            body.setProperty("errors", Map.of(field, invalidValueMessage(mismatch.getTargetType())));
+            body.setProperty("errors", Map.of(field, invalidFieldMessage(mismatch)));
         }
         return handleExceptionInternal(exception, body, headers, status, request);
     }
 
-    private String invalidValueMessage(Class<?> targetType) {
+    private String invalidFieldMessage(MismatchedInputException mismatch) {
+        if (mismatch instanceof UnrecognizedPropertyException) {
+            return "unknown field";
+        }
+        Class<?> targetType = mismatch.getTargetType();
         if (targetType != null && Number.class.isAssignableFrom(targetType)) {
             return "must be a number";
         }

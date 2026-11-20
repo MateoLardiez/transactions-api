@@ -114,6 +114,7 @@ Los errores del body (campos faltantes o con un tipo de dato incorrecto) agregan
 - **El padre debe existir previamente (400)**. Junto con la decisión anterior, garantiza que las relaciones forman un arbol sin ciclos, por construcción.
 - **Montos negativos permitidos**. El enunciado no los restringe y pueden representar devoluciones o ajustes.
 - **Tipo inexistente devuelve `[]`**. Consultar un tipo sin transacciones no es un error, simplemente no hay resultados.
+- **Los tipos distinguen mayúsculas**. `cars` y `Cars` son tipos distintos. La consigna no lo especifica y la comparación exacta es la más predecible.
 - **Suma calculada con recorrido iterativo** (BFS con una cola explícita) en lugar de recursión, para soportar cadenas de cualquier profundidad.
 - **Java 25 y Spring Boot 4**. El enunciado pide Java 11 o superior; se eligió la última versión LTS de Java por tener el soporte más largo, junto con la versión estable actual de Spring Boot.
 - **Maven con Maven Wrapper**. El proyecto incluye `./mvnw`, por lo que no hace falta tener Maven instalado para compilarlo.
@@ -122,6 +123,7 @@ Los errores del body (campos faltantes o con un tipo de dato incorrecto) agregan
 - **La imagen de Docker corre los tests al construirse**. El build ejecuta `./mvnw package` sin `-DskipTests`, así que si algún test falla no se genera la imagen. Tarda más en construir, pero garantiza que nunca se empaquete código con tests en rojo.
 - **Sin Docker Compose**. Compose sirve para coordinar varios servicios (por ejemplo, la app junto a una base de datos). Este proyecto tiene un único servicio sin dependencias externas, así que solo serviría para juntar `docker build` y `docker run` en un comando. Si en el futuro se agregara una base de datos, ahí sí tendría sentido.
 - **`amount` debe ser un número JSON**. Por defecto Jackson convierte strings numéricos (`"amount": "2"`) en números sin avisar. Se desactivó esa conversión porque el monto es el dato crítico de una transacción: un valor con formato ambiguo se rechaza con `400` en lugar de interpretarse en silencio.
+- **Campos desconocidos rechazados**. Por defecto Jackson ignora los campos que no reconoce. Eso hacía que un `"parentId"` (en lugar de `"parent_id"`) se ignorara y la transacción se creara sin padre, sin ningún aviso al cliente. Ahora un campo desconocido responde `400` con `"errors": { "parentId": "unknown field" }`. Omitir `parent_id` sigue siendo válido.
 
 ## Modelo de datos
 
@@ -225,7 +227,7 @@ src/main/java/com/challenge/transactions/
 ## Posibles mejoras
 
 - **Devolver el objeto creado en el `PUT`**. Es la convención habitual para un recurso recién creado y evita que el cliente tenga que consultarlo de nuevo. No se hizo para respetar el body `{ "status": "ok" }` que pide la consigna.
-- **Usar `BigDecimal` para los montos**. `double` es punto flotante binario y no representa exactamente algunos decimales (`0.1 + 0.2` da `0.30000000000000004`). Para dinero real conviene `BigDecimal`, que es decimal exacto. Se usó `double` porque es el tipo que especifica la consigna.
+- **Usar `BigDecimal` para los montos**. `double` es punto flotante binario y no representa exactamente algunos decimales (`0.1 + 0.2` da `0.30000000000000004`). Para dinero real conviene `BigDecimal`, que es decimal exacto. Se usó `double` porque es el tipo que especifica la consigna. `BigDecimal` además resolvería el overflow: con montos extremos (dos transacciones de `1e308`) la suma supera el máximo de un `double` y la respuesta es `{ "sum": "Infinity" }`, un string donde el contrato promete un número.
 - **Persistencia en una base de datos**. Hoy los datos se pierden al reiniciar la aplicación. Bastaría con una nueva implementación de `TransactionRepository`. Con SQL, la suma se podría resolver en una sola consulta recursiva (`WITH RECURSIVE`).
 - **Índice por tipo**. `findIdsByType` recorre todas las transacciones (O(n)). Un segundo índice `type → ids`, como el de hijos, lo haría directo.
 - **Rechazar números en campos de texto**. Hoy `"type": 123` se acepta y se guarda como `"123"`, porque la configuración que vuelve estricto a `amount` solo cubre la conversión de string a número. Se podría rechazar con un customizer de Jackson. No se priorizó porque no afecta los montos ni las sumas.
