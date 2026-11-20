@@ -79,6 +79,27 @@ class TransactionControllerIntegrationTest {
     }
 
     @Test
+    void putTransactionWithNonNumericAmountReturnsBadRequestWithField() throws Exception {
+        putTransaction(10, """
+                { "amount": "aa", "type": "cars" }
+                """)
+                .andExpect(status().isBadRequest())
+                .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
+                .andExpect(jsonPath("$.errors.amount").value("must be a number"));
+
+        assertThat(repository.findById(10L)).isEmpty();
+    }
+
+    @Test
+    void putTransactionWithInvalidTypeValueReturnsBadRequestWithField() throws Exception {
+        putTransaction(10, """
+                { "amount": 5000, "type": { "name": "cars" } }
+                """)
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errors.type").value("has an invalid value"));
+    }
+
+    @Test
     void validationMessagesDoNotDependOnClientLanguage() throws Exception {
         mockMvc.perform(put("/transactions/10")
                         .header("Accept-Language", "es")

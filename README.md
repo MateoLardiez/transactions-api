@@ -90,7 +90,7 @@ Todos los errores se responden con el formato estándar `ProblemDetail` y `Conte
 }
 ```
 
-Los errores de validación del body agregan el campo `errors`, con el motivo de cada campo inválido:
+Los errores del body (campos faltantes o con un tipo de dato incorrecto) agregan el campo `errors`, con el motivo de cada campo inválido:
 
 ```json
 {
