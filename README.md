@@ -33,6 +33,11 @@ API REST en Spring Boot que almacena transacciones en memoria, permite consultar
 
 ## API
 
+Con la aplicación corriendo, la documentación de la API está disponible en:
+
+- **Swagger UI** (interactiva, permite probar los endpoints): `http://localhost:8080/swagger-ui.html`
+- **OpenAPI** (especificación en JSON): `http://localhost:8080/v3/api-docs`
+
 ### `PUT /transactions/{transaction_id}`
 
 Registra una transacción.
