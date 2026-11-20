@@ -182,6 +182,8 @@ La API queda disponible en `http://localhost:8080`.
 
 El `Dockerfile` es multi-stage: la primera etapa compila el Jar y corre los tests con el JDK; la segunda solo contiene el JRE y el Jar, por lo que la imagen final es más liviana.
 
+Las dependencias de Maven se descargan en una capa separada del código fuente, así que Docker las reutiliza de su caché mientras el `pom.xml` no cambie. Un cambio solo en el código reconstruye la imagen en unos 30 segundos en lugar de unos 2 minutos.
+
 ## Tests
 
 ```bash
@@ -231,3 +233,4 @@ src/main/java/com/challenge/transactions/
 - **Persistencia en una base de datos**. Hoy los datos se pierden al reiniciar la aplicación. Bastaría con una nueva implementación de `TransactionRepository`. Con SQL, la suma se podría resolver en una sola consulta recursiva (`WITH RECURSIVE`).
 - **Índice por tipo**. `findIdsByType` recorre todas las transacciones (O(n)). Un segundo índice `type → ids`, como el de hijos, lo haría directo.
 - **Rechazar números en campos de texto**. Hoy `"type": 123` se acepta y se guarda como `"123"`, porque la configuración que vuelve estricto a `amount` solo cubre la conversión de string a número. Se podría rechazar con un customizer de Jackson. No se priorizó porque no afecta los montos ni las sumas.
+- **Correr el contenedor con un usuario sin privilegios**. Hoy la app corre como `root` dentro del contenedor. Por el principio de mínimo privilegio, conviene crear un usuario de sistema, así una vulnerabilidad en la app tendría un impacto más acotado.
